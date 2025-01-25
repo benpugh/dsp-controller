@@ -1,6 +1,6 @@
 # DSP Controller
 
-A Teensy-based controller that translates CAN bus audio commands from a car stereo into serial commands for a DSP amplifier.
+A Teensy-based controller that translates CAN bus audio commands from a car stereo into serial commands for a DSP-408.
 
 ## Requirements
 
