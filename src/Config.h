@@ -5,7 +5,7 @@
 struct Config {
     // Hardware Configuration
     struct Hardware {
-        static const uint8_t RELAY_PIN = 2;
+        static const uint8_t RELAY_PIN = 14;
         static const uint32_t RETRY_INTERVAL = 500;    // ms
         static const uint32_t RESET_DELAY = 100;       // ms
         

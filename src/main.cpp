@@ -20,7 +20,7 @@ void canPowerCallback(const CAN_message_t &msg) {
 
 void setup() {
     DEBUG_INIT(Config::Hardware::DEBUG_BAUD);
-    DEBUG_PRINT("DSP Controller Starting...");
+    USER_ACTION("DSP Controller Starting...");
     
     Serial1.begin(Config::Hardware::SERIAL_BAUD, SERIAL_8N2);
     
@@ -38,7 +38,7 @@ void setup() {
     
     controller = new DspController();
     
-    DEBUG_PRINT("Initialization complete");
+    USER_ACTION("DSP Controller initialized");
 }
 
 void loop() {

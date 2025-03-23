@@ -1,4 +1,5 @@
 #include "DspController.h"
+#include "../debug/Debug.h"
 
 DspController::DspController() {
     pinMode(Config::Hardware::RELAY_PIN, OUTPUT);
@@ -24,7 +25,7 @@ uint8_t DspController::adjustBassForDsp(uint8_t huBass) {
 }
 
 void DspController::startReset() {
-    DEBUG_PRINT("Starting reset sequence");
+    USER_ACTION("Starting reset sequence");
     
     state.isResetting = true;
     state.resetStartTime = millis();
@@ -42,7 +43,7 @@ void DspController::completeReset() {
     state.lastBassTxTime = 0;
     state.isResetting = false;
 
-    DEBUG_PRINT("Reset complete");
+    USER_ACTION("Reset complete");
 }
 
 void DspController::clearRxBuffer() {
@@ -52,15 +53,11 @@ void DspController::clearRxBuffer() {
 }
 
 void DspController::handleCanAudioMsg(const CAN_message_t &msg) {
-    DEBUG_PRINTF("CAN 0x%03X | ", msg.id);
-    for (uint8_t i = 0; i < msg.len; i++) {
-        DEBUG_PRINTF("%02X ", msg.buf[i]);
-    }
-    DEBUG_PRINT("");
+    DEBUG_CAN_RX(msg.id, msg.buf, msg.len);
 
     uint8_t targetVolume = adjustVolForDsp(msg.buf[0]);
     uint8_t targetBass = adjustBassForDsp(msg.buf[3] - 10);
-    DEBUG_PRINTF("Audio message - Volume: %d -> %d, Bass: %d -> %d\n", 
+    USER_AUDIO("Audio message - Volume: %d -> %d, Bass: %d -> %d", 
         msg.buf[0], targetVolume, msg.buf[3] - 10, targetBass);
 
     adjustAndSendCommand(DspProtocolConstants::VOL_CMD, state.currentVolume, targetVolume, "Volume");
@@ -68,11 +65,7 @@ void DspController::handleCanAudioMsg(const CAN_message_t &msg) {
 }
 
 void DspController::handleCanPowerMsg(const CAN_message_t &msg) {
-    DEBUG_PRINTF("CAN 0x%03X | ", msg.id);
-    for (uint8_t i = 0; i < msg.len; i++) {
-        DEBUG_PRINTF("%02X ", msg.buf[i]);
-    }
-    DEBUG_PRINT("");
+    DEBUG_CAN_RX(msg.id, msg.buf, msg.len);
     
     bool newPowerState = (msg.buf[1] == 2);
     if (newPowerState != state.isPowered) {
@@ -84,9 +77,9 @@ void DspController::handleCanPowerMsg(const CAN_message_t &msg) {
             state.lastBassTxTime = 0;
             digitalWrite(Config::Hardware::RELAY_PIN, HIGH);
             state.isPowered = true;
-            DEBUG_PRINT("Power ON");
+            USER_POWER("Power ON");
         } else {
-            DEBUG_PRINT("Power OFF");
+            USER_POWER("Power OFF");
             startReset();
         }
     }
@@ -135,7 +128,7 @@ void DspController::update() {
             sendDspCommand(DspProtocolConstants::BASS_CMD, state.targetBass);
         }
 
-        state.stats.print();
+        DEBUG_CHECK_STATS(currentTime);
     }
 }
 
@@ -144,14 +137,14 @@ void DspController::processDspResponse(const byte* msg) {
         uint8_t oldVol = state.currentVolume;
         state.currentVolume = msg[9];
         if (oldVol != state.currentVolume) {
-            DEBUG_PRINTF("DSP Volume changed %d -> %d", oldVol, state.currentVolume);
+            USER_AUDIO_F("Volume", oldVol, state.currentVolume);
         }
     }
     else if (msg[5] == DspProtocolConstants::BASS_CMD.primary) {
         uint8_t oldBass = state.currentBass;
         state.currentBass = msg[9];
         if (oldBass != state.currentBass) {
-            DEBUG_PRINTF("DSP Bass changed %d -> %d", oldBass, state.currentBass);
+            USER_AUDIO_F("Bass", oldBass, state.currentBass);
         }
     }
 }
@@ -159,7 +152,8 @@ void DspController::processDspResponse(const byte* msg) {
 void DspController::adjustAndSendCommand(const DspCmdType& cmdType, uint8_t& currentValue, 
                                        uint8_t targetValue, const char* paramName) {
     if (state.isPowered && currentValue != targetValue) {
-        DEBUG_PRINTF("State: %s changed %d -> %d", paramName, currentValue, targetValue);
+        USER_AUDIO_F(paramName, currentValue, targetValue);
+        
         clearRxBuffer();
         sendDspCommand(cmdType, targetValue);
         currentValue = targetValue;

@@ -53,9 +53,5 @@ void DspProtocol::sendCommand(const DspCommand& cmd) {
     buffer[9] = calcLrc(buffer, 4, 8);
     Serial1.write(buffer, DspProtocolConstants::MESSAGE_SIZE);
     
-    DEBUG_PRINTF("DSP %s | ", cmd.commandType.primary == DspProtocolConstants::VOL_CMD.primary ? "VOL" : "BASS");
-    for (uint8_t i = 0; i < DspProtocolConstants::MESSAGE_SIZE; i++) {
-        DEBUG_PRINTF("%02X ", buffer[i]);
-    }
-    DEBUG_PRINT("");
+    DEBUG_UART_TX(buffer, DspProtocolConstants::MESSAGE_SIZE);
 } 

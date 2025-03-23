@@ -19,7 +19,7 @@ public:
     
     bool push(byte value) {
         if (count >= BUFFER_SIZE) {
-            DEBUG_PRINT("Buffer overflow prevented");
+            DEBUG_LOG("Buffer overflow!");
             return false;
         }
         data[head] = value;
